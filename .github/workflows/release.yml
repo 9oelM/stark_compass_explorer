@@ -4,7 +4,7 @@ on:
   create:
 
 env:
-  DOCKER_REPOSITORY: ghcr.io/9oelm/stark_compass_explorer
+  DOCKER_REPOSITORY: ghcr.io/${{ github.repository }}
 
 jobs:
   build-amd64:
