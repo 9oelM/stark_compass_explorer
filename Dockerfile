@@ -5,6 +5,11 @@ ENV MIX_ENV=prod
 WORKDIR /explorer
 COPY . .
 
+# this migration file causes an error when building the image due to
+# https://github.com/lambdaclass/stark_compass_explorer/issues/309
+# but we are starting from a fresh database so we can just remove it
+RUN rm priv/repo/migrations/20230929141348_change_blocks_pk.exs
+
 RUN apt update && apt install -y git
 
 RUN mix local.hex --force
