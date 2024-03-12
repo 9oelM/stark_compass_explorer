@@ -8,26 +8,32 @@ defmodule StarknetExplorer.Calldata do
     "0x21691762da057c1b71f851f9b709e0c143628acf6e0cbc9735411a65663d747"
   ]
 
-  def parse_calldata(%{type: "INVOKE"} = tx, block_id, network) do
-    IO.inspect(tx.calldata, label: "block_id @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-    IO.inspect(tx.version, label: "tx.version @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-
+  def parse_calldata(%{type: "INVOKE"} = tx, _block_id, _network) do
+    # calldata is a list of objects
+    # [
+    # {
+    #   address: "0x4806749db1148db91b18e9ef9e4698690b0f96289368378e84e51eaea73554",
+    #   calldata: ["0x1f3b27e2f13d7d86f7f4c7dceb267290f158ac383803b22b712f7f9e58905ef",
+    #    "0x261dd1ce2f2088800000"],
+    #   data_len: 2,
+    #   data_offset: 8,
+    #   selector: "0x5e70f5618a5819edcf5225f37d01485ed62110516ead9d1a51bfcf852f4264"
+    # },
+    # ...
+    # ]
     calldata =
       from_plain_calldata_with_fallback(tx.calldata)
 
-    IO.inspect(calldata, label: "before@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-
-    Enum.map(
-      calldata,
-      fn call ->
-        IO.inspect(call, label: "call @@@@@@@@@@@@@") # Debug statement 1
-        functions_data = get_functions_data(block_id, call.address, network)
-        IO.inspect(functions_data, label: "functions_data @@@@@@@@@@@@@") # Debug statement 2
-        {function, structs} = get_input_data(functions_data, call.selector)
-        IO.inspect({function, structs}, label: "struct @@@@@@@@@@@@@") # Debug statement 3
-        Map.put(call, :call, as_fn_call(function, call.calldata, structs))
-      end
-    )
+    # TODO: understand how get_functions_data works
+    # Enum.map(
+    #   calldata,
+    #   fn call ->
+    #     functions_data = get_functions_data(block_id, call.address, network)
+    #     {function, structs} = get_input_data(functions_data, call.selector)
+    #     Map.put(call, :call, as_fn_call(function, call.calldata, structs))
+    #   end
+    # )
+    calldata
   end
 
   def from_plain_calldata([array_len | rest], "0x0") do
@@ -66,16 +72,14 @@ defmodule StarknetExplorer.Calldata do
   end
 
   # Sometimes data marked as 0x1 version is actually versioned with 0x0,
-  # dunno why
+  # dunno why. So just try both.
   def from_plain_calldata_with_fallback(array) do
     try do
       calldata = StarknetExplorer.Calldata.from_plain_calldata(array, "0x0")
-      IO.inspect(calldata)
       calldata
     rescue
       _exception ->
         calldata = StarknetExplorer.Calldata.from_plain_calldata(array, "0x1")
-        IO.inspect(calldata)
         calldata
     end
   end

@@ -423,71 +423,9 @@ defmodule StarknetExplorerWeb.TransactionLive do
         <div class="col-span-full">
           <%= if @input_data != nil do %>
             <%= for input <- @input_data do %>
-              <%= unless is_nil(input.call) do %>
-                <div class="inner-block custom-list !p-0">
-                  <div
-                    id={"#{input.call.name}"}
-                    class="w-full bg-black/20 p-5 !flex items-start justify-between hover:bg-black/10"
-                    phx-hook="ShowTableData"
-                  >
-                    <div class="flex items-center gap-0.5 flex-wrap">
-                      <span>call</span>
-                      <span class="text-se-pink ml-1"><%= input.call.name %></span>
-                      (<.intersperse :let={arg} enum={input.call.args}>
-                        <:separator><span class="mr-2">,</span></:separator>
-                        <span class="text-blue-400"><%= arg.name %></span>
-                      </.intersperse>) <span class="text-blue-400 mx-1">-></span>
-                      <div class="hash">
-                        <%= input.selector %>
-                        <CoreComponents.copy_button text={input.selector} />
-                      </div>
-                    </div>
-                    <div class="arrow-button transition-all duration-200 shrink-0">
-                      <img alt="Chevron" class="transform -rotate-90" src={~p"/images/chevron.svg"} />
-                    </div>
-                  </div>
-                  <div class="w-full bg-[#1e1e2b]/25 p-5">
-                    <%= for arg <- input.call.args do %>
-                      <div class="custom-list-item">
-                        <div class="pb-5">
-                          <div class="list-h">Input</div>
-                          <div>
-                            <%= arg.name %>
-                          </div>
-                        </div>
-                        <div class="col-span-2 pb-5">
-                          <div class="list-h">Type</div>
-                          <div class="w-full overflow-x-auto">
-                            <%= arg.type %>
-                          </div>
-                        </div>
-                        <div class="col-span-2 pb-5">
-                          <div class="list-h">Value</div>
-                          <div class="hash flex">
-                            <%= Utils.format_arg_value(arg) %>
-                            <CoreComponents.copy_button text={Utils.format_arg_value(arg)} />
-                          </div>
-                        </div>
-                      </div>
-                    <% end %>
-                  </div>
-                </div>
-              <% else %>
-                <div class="w-full bg-black/20 p-5 mt-5">
-                  Not Supported <span class="text-se-pink">...</span>(...)
-                  <span class="text-blue-400">-></span>
-                  <div class="hash">
-                    <%= input.selector %>
-                    <CoreComponents.copy_button text={input.selector} />
-                  </div>
-                </div>
+                <pre><%= Poison.encode!(input, pretty: true) %></pre>
               <% end %>
             <% end %>
-          <% else %>
-            <div class="w-full bg-black/20 p-5 mt-5">
-              Not Supported <span class="text-se-pink">...</span>(...)
-            </div>
-          <% end %>
         </div>
       <% else %>
         <div class="w-full bg-black/20 p-5 mt-5">
