@@ -542,7 +542,7 @@ defmodule StarknetExplorerWeb.TransactionLive do
             <span class="blue-label py-1 px-2 rounded-lg">STEPS</span> <%= "#{Utils.hex_to_integer(@transaction_receipt.execution_resources["steps"])}" %>
           </div>
           <div class="flex flex-col justify-center items-center gap-2">
-            <span class="green-label py-1 px-2 rounded-lg">MEMORY HOLES</span> <%= "#{Utils.hex_to_integer(@transaction_receipt.execution_resources["memory_holes"])}" %>
+            <span class="green-label py-1 px-2 rounded-lg">MEMORY HOLES</span>
           </div>
           <%= for {builtin_name, resources} <- @transaction_receipt.execution_resources do %>
             <%= if String.ends_with?(builtin_name, "_applications") and resources != "0x0" do %>
