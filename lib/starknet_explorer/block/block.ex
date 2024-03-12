@@ -320,7 +320,9 @@ defmodule StarknetExplorer.Block do
           )
         end)
 
-        Enum.each(events, fn event -> {:ok, _event} = Events.insert(event) end)
+        IO.inspect(events, label: "events")
+
+        Events.insert_all(events)
       end)
 
     amount_messages =

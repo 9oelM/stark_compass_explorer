@@ -95,6 +95,20 @@ defmodule StarknetExplorer.Events do
     |> Repo.insert()
   end
 
+  def insert_all(events) do
+    # Ecto supports Repo.insert_all/3
+    # but it doesn't support inserting changesets, only raw Maps or Keyword lists,
+    # so you'll have to filter all valid changesets and extract the fields from them yourself like you
+    # would have needed to if you used the Postgrex bulk insert feature.
+    cs = Enum.map(events, fn event -> changeset(%StarknetExplorer.Events{}, event) end)
+    filtered = Enum.filter(cs, fn x -> x.valid? end)
+    structs = Enum.map(filtered, fn x -> x.changes end)
+    # postgresql protocol can not handle 90000 parameters, the maximum is 65535
+    # so we need to split the list of events into smaller chunks
+    chunks = Enum.chunk_every(structs, 65535)
+    Enum.each(chunks, fn chunk -> Repo.insert_all(StarknetExplorer.Events, chunk) end)
+  end
+
   # This is commented until prior use when we resolve how and when to fetch
   # the contract class data.
   # defp _get_event_name(abi, event_name_hashed) when is_list(abi) do

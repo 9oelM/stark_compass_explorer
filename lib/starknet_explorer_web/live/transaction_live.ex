@@ -640,6 +640,8 @@ defmodule StarknetExplorerWeb.TransactionLive do
     events =
       Events.get_by_tx_hash(socket.assigns.transaction_hash, socket.assigns.network)
 
+    IO.inspect(events)
+
     messages_sent =
       (Message.from_transaction_receipt(socket.assigns.transaction_receipt) ++
          [Message.from_transaction(socket.assigns.transaction)])

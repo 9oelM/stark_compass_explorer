@@ -93,3 +93,87 @@ calldata = nil
 calldata = StarknetExplorer.Calldata.from_plain_calldata_with_fallback(array, version)
 
 IO.inspect calldata
+
+defmodule JSONStringify do
+  def stringify(data) when is_list(data) do
+    "[" <> stringify_list(data) <> "]"
+  end
+
+  def stringify(data) when is_map(data) do
+    "{" <> stringify_map(data) <> "}"
+  end
+
+  def stringify(data) when is_list(data) or is_map(data) do
+    Enum.join(Enum.map(data, &stringify/1), ", ")
+  end
+
+  def stringify(data) when is_integer(data) or is_float(data) do
+    :erlang.float_to_binary(data)
+  end
+
+  def stringify(data) when is_binary(data) do
+    "\"" <> data <> "\""
+  end
+
+  defp stringify_list([]), do: ""
+  defp stringify_list(list), do: Enum.join(Enum.map(list, &stringify/1), ", ")
+
+  defp stringify_map(%{} = map) do
+    Enum.join(Enum.map(Map.to_list(map), &stringify_map_entry/1), ", ")
+  end
+
+  defp stringify_map(%{}), do: ""
+
+  defp stringify_map_entry({key, value}) do
+    stringify(key) <> ": " <> stringify(value)
+  end
+end
+
+a = [
+%{
+  address: "0x4806749db1148db91b18e9ef9e4698690b0f96289368378e84e51eaea73554",
+  calldata: ["0xc6164da852d230360333d6ade3551ee3e48124c815704f51fa7f12d8287dcc",
+   "0x11e1a300"],
+  data_len: 2,
+  data_offset: 4,
+  selector: "0x5e70f5618a5819edcf5225f37d01485ed62110516ead9d1a51bfcf852f4264"
+},
+%{
+  address: "0x4806749db1148db91b18e9ef9e4698690b0f96289368378e84e51eaea73554",
+  calldata: ["0x7d83b422a5fee99afaca50b6adf7de759af4a725f61cce747e06b6c09f7ab38",
+   "0x746a528800"],
+  data_len: 2,
+  data_offset: 6,
+  selector: "0x5e70f5618a5819edcf5225f37d01485ed62110516ead9d1a51bfcf852f4264"
+},
+%{
+  address: "0x4806749db1148db91b18e9ef9e4698690b0f96289368378e84e51eaea73554",
+  calldata: ["0x1f3b27e2f13d7d86f7f4c7dceb267290f158ac383803b22b712f7f9e58905ef",
+   "0x261dd1ce2f2088800000"],
+  data_len: 2,
+  data_offset: 8,
+  selector: "0x5e70f5618a5819edcf5225f37d01485ed62110516ead9d1a51bfcf852f4264"
+}
+]
+data = [
+  %{
+    name: "John",
+    age: 30,
+    hobbies: ["reading", "gaming"],
+    address: %{
+      street: "123 Main St",
+      city: "New York"
+    }
+  },
+  %{
+    name: "Jane",
+    age: 25,
+    hobbies: ["painting", "traveling"],
+    address: %{
+      street: "456 Elm St",
+      city: "San Francisco"
+    }
+  }
+]
+json_string = JSONStringify.stringify(data)
+IO.inspect(json_string)
