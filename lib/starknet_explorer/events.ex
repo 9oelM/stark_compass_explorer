@@ -102,10 +102,24 @@ defmodule StarknetExplorer.Events do
     # would have needed to if you used the Postgrex bulk insert feature.
     cs = Enum.map(events, fn event -> changeset(%StarknetExplorer.Events{}, event) end)
     filtered = Enum.filter(cs, fn x -> x.valid? end)
-    structs = Enum.map(filtered, fn x -> x.changes end)
+    naive_datetime = NaiveDateTime.utc_now()
+    naive_datetime = NaiveDateTime.truncate(naive_datetime, :second)
+    structs = Enum.map(filtered, fn x -> %{
+      from_address: x.changes[:from_address],
+      age: x.changes[:age],
+      data: x.changes[:data],
+      index_in_block: x.changes[:index_in_block],
+      block_number: x.changes[:block_number],
+      transaction_hash: x.changes[:transaction_hash],
+      network: x.changes[:network],
+      name: x.changes[:name],
+      # get today
+      inserted_at: naive_datetime,
+      updated_at: naive_datetime,
+    } end)
     # postgresql protocol can not handle 90000 parameters, the maximum is 65535
     # so we need to split the list of events into smaller chunks
-    chunks = Enum.chunk_every(structs, 65535)
+    chunks = Enum.chunk_every(structs, 200)
     Enum.each(chunks, fn chunk -> Repo.insert_all(StarknetExplorer.Events, chunk) end)
   end
 
