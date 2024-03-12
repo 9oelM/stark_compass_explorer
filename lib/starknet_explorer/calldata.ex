@@ -9,22 +9,25 @@ defmodule StarknetExplorer.Calldata do
   ]
 
   def parse_calldata(%{type: "INVOKE"} = tx, block_id, network) do
+    IO.inspect(tx.calldata, label: "block_id @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+    IO.inspect(tx.version, label: "tx.version @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+
     calldata =
-      from_plain_calldata(tx.calldata, tx.version)
+      from_plain_calldata_with_fallback(tx.calldata)
+
+    IO.inspect(calldata, label: "before@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
     Enum.map(
       calldata,
       fn call ->
+        IO.inspect(call, label: "call @@@@@@@@@@@@@") # Debug statement 1
         functions_data = get_functions_data(block_id, call.address, network)
+        IO.inspect(functions_data, label: "functions_data @@@@@@@@@@@@@") # Debug statement 2
         {function, structs} = get_input_data(functions_data, call.selector)
-
+        IO.inspect({function, structs}, label: "struct @@@@@@@@@@@@@") # Debug statement 3
         Map.put(call, :call, as_fn_call(function, call.calldata, structs))
       end
     )
-  end
-
-  def parse_calldata(_tx, _block_id, _network) do
-    nil
   end
 
   def from_plain_calldata([array_len | rest], "0x0") do
@@ -60,6 +63,21 @@ defmodule StarknetExplorer.Calldata do
       )
 
     Enum.reverse(calls)
+  end
+
+  # Sometimes data marked as 0x1 version is actually versioned with 0x0,
+  # dunno why
+  def from_plain_calldata_with_fallback(array) do
+    try do
+      calldata = StarknetExplorer.Calldata.from_plain_calldata(array, "0x0")
+      IO.inspect(calldata)
+      calldata
+    rescue
+      _exception ->
+        calldata = StarknetExplorer.Calldata.from_plain_calldata(array, "0x1")
+        IO.inspect(calldata)
+        calldata
+    end
   end
 
   def get_call_header_v0([to, selector, data_offset, data_len | rest]) do
@@ -191,7 +209,10 @@ defmodule StarknetExplorer.Calldata do
   def get_functions_data(block_id, address, network) do
     case Rpc.get_class_at(block_id, address, network) do
       {:ok, class} ->
+        IO.inspect("class @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@") # Debug statement 4
+        IO.inspect(class, label: "class internal @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@") # Debug statement 4
         selectors = get_selectors(class)
+        IO.inspect(selectors, label: "selectors @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@") # Debug statement 4
 
         implementation_selector =
           Enum.find(
@@ -201,14 +222,20 @@ defmodule StarknetExplorer.Calldata do
             end
           )
 
+        IO.inspect(implementation_selector, label: "implementation_selector @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@") # Debug statement 4
+
         implementation_data =
           case implementation_selector do
             nil ->
+              IO.inspect("implementation_selector nil @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@") # Debug statement 4
+
               nil
 
             _ ->
               {:ok, [implementation_address_or_hash]} =
                 Rpc.call(block_id, address, implementation_selector, network)
+
+              IO.inspect(implementation_address_or_hash, label: "implementation_address_or_hash @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
               case Rpc.get_class(block_id, implementation_address_or_hash, network) do
                 {:ok, class} ->
@@ -222,12 +249,16 @@ defmodule StarknetExplorer.Calldata do
               end
           end
 
+        IO.inspect(process_class_data(class, address, :address), label: "process_class_data(class, address, :address) @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+        IO.inspect(implementation_data, label: "implementation_data @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+
         %{
           :main => process_class_data(class, address, :address),
           :implementation => implementation_data
         }
 
       {:error, _error} ->
+        IO.inspect("error @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@") # Debug statement 4
         nil
     end
   end
@@ -257,7 +288,26 @@ defmodule StarknetExplorer.Calldata do
 
     {functions[selector], structs}
   end
-
+  # class structure
+  # {
+  # "entry_points_by_type" => %{
+  #   "CONSTRUCTOR" => [
+  #     %{
+  #       "offset" => "0x13c7",
+  #       "selector" => "0x28ffe4ff0f226a9107253e17a904099aa4f63a02a5621de0576e5aa71bc5194"
+  #     }
+  #   ],
+  #   "EXTERNAL" => [
+  #     %{
+  #       "offset" => "0x1740",
+  #       "selector" => "0x52580a92c73f4428f1a260c5d768ef462b25955307de00f99957df119865d"
+  #     },
+  #     %{
+  #       "offset" => "0x170c",
+  #       "selector" => "0x5e70f5618a5819edcf5225f37d01485ed62110516ead9d1a51bfcf852f4264"
+  #     },
+  # ...
+  # }
   def get_selectors(class) do
     List.foldl(
       class["entry_points_by_type"]["EXTERNAL"],
